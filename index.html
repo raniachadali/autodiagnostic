@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>[hidden]{display:none!important}body{margin:0}</style>
+</head>
+<body>
+<title>Autodiagnostic cybersécurité</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout : colonne unique type "formulaire d'audit" — une question par écran, verdict puis extrait de rapport généré par règles */
+:root{
+  --bg:#f3f5f4; --surface:#ffffff; --ink:#14211f; --muted:#5a6967; --line:#d6dedc;
+  --accent:#0f5c57; --accent-ink:#ffffff; --accent-soft:#e1efed;
+  --lvA:#c0392b; --lvB:#c98a06; --lvC:#2f7d4a;
+  --lvA-soft:#fbe9e7; --lvB-soft:#fdf3dc; --lvC-soft:#e5f3ea;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e1514; --surface:#16201f; --ink:#e6eeec; --muted:#9aaba8; --line:#2a3836;
+  --accent:#5cc2b8; --accent-ink:#06201d; --accent-soft:#183331;
+  --lvA:#ef7b6e; --lvB:#e8b54a; --lvC:#6cc58a;
+  --lvA-soft:#3a1d1a; --lvB-soft:#3a2f14; --lvC-soft:#173323; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1514; --surface:#16201f; --ink:#e6eeec; --muted:#9aaba8; --line:#2a3836;
+  --accent:#5cc2b8; --accent-ink:#06201d; --accent-soft:#183331;
+  --lvA:#ef7b6e; --lvB:#e8b54a; --lvC:#6cc58a;
+  --lvA-soft:#3a1d1a; --lvB-soft:#3a2f14; --lvC-soft:#173323; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5}
+.wrap{max-width:680px;margin:0 auto;padding-block:24px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:20px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.brand{font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.linkbtn{background:none;border:0;color:var(--accent);font:500 14px var(--f-body);cursor:pointer;padding:4px 0;text-decoration:underline;text-underline-offset:3px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(28px,6vw,40px);font-weight:800}
+h2{font-size:clamp(22px,4.5vw,28px);font-weight:600}
+h3{font-size:18px;font-weight:600}
+p{margin:0}
+.lead{font-size:18px;color:var(--muted);max-width:60ch}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:14px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.fact{border-left:3px solid var(--accent);padding-left:10px}
+.fact b{display:block;font-family:var(--f-display);font-size:22px}
+.fact span{color:var(--muted);font-size:14px}
+.btn{appearance:none;border:0;border-radius:8px;padding:14px 22px;font:600 16px var(--f-body);cursor:pointer;background:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn:focus-visible,.opt:focus-within,.linkbtn:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.row{display:flex;gap:12px;flex-wrap:wrap;justify-content:space-between}
+.progress{display:flex;gap:6px}
+.progress i{flex:1;height:6px;border-radius:3px;background:var(--line)}
+.progress i.on{background:var(--accent)}
+.qmeta{font-family:var(--f-mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.opts{display:flex;flex-direction:column;gap:10px}
+.opt{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--line);border-radius:8px;padding:14px;cursor:pointer;background:var(--surface)}
+.opt input{margin-top:4px;accent-color:var(--accent);width:18px;height:18px;flex:none}
+.opt.sel{border-color:var(--accent);background:var(--accent-soft)}
+.opt .k{font-family:var(--f-mono);font-weight:500;color:var(--muted);flex:none}
+.verdict{border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:8px;border:1px solid var(--line)}
+.verdict.A{background:var(--lvA-soft);border-color:var(--lvA)}
+.verdict.B{background:var(--lvB-soft);border-color:var(--lvB)}
+.verdict.C{background:var(--lvC-soft);border-color:var(--lvC)}
+.pill{display:inline-flex;align-items:center;gap:6px;font:500 12px var(--f-mono);letter-spacing:.05em;text-transform:uppercase;border-radius:99px;padding:3px 10px;color:#fff;align-self:flex-start}
+.pill.A{background:var(--lvA)}.pill.B{background:var(--lvB)}.pill.C{background:var(--lvC)}
+:root:not([data-theme="light"]) .pill{color:#fff}
+.calc{font-family:var(--f-mono);font-size:13px;color:var(--muted);overflow-x:auto}
+.report{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:16px}
+.report .doc-h{font-family:var(--f-mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);padding-bottom:8px}
+.report section{display:flex;flex-direction:column;gap:6px}
+.ref{font-size:13px;color:var(--muted)}
+.report ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px}
+.mini{width:100%;border-collapse:collapse;font-size:14px}
+.mini td{padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+.mini td:last-child{text-align:right;white-space:nowrap}
+.note{font-size:14px;color:var(--muted)}
+/* animateur */
+.qblock{display:flex;flex-direction:column;gap:10px;border-top:1px solid var(--line);padding-top:14px}
+.counts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.counts label{display:flex;flex-direction:column;gap:4px;font:500 13px var(--f-mono)}
+.counts input{width:100%;padding:10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:500 18px var(--f-mono);font-variant-numeric:tabular-nums}
+.bar{display:flex;height:26px;border-radius:5px;overflow:hidden;background:var(--line)}
+.bar span{display:flex;align-items:center;justify-content:center;color:#fff;font:500 12px var(--f-mono);min-width:0;overflow:hidden;white-space:nowrap}
+.bar .a{background:var(--lvA)}.bar .b{background:var(--lvB)}.bar .c{background:var(--lvC)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:middle}
+@media (prefers-reduced-motion:no-preference){.screen{animation:in .25s ease-out}@keyframes in{from{transform:translateY(6px)}to{transform:none}}}
+</style>
+
+<div class="wrap" id="app" aria-live="polite"></div>
+
+<script>
+/* ===== Données : volet Gouvernance du questionnaire audit_matstrat (Q1–Q5) ===== */
+const QUESTIONS = [
+ {id:"Q1", theme:"Implication de la Direction", cat:"Gouvernance", ref:"ISO 27001 (Leadership) · ANSSI",
+  text:"La Direction valide-t-elle les décisions importantes concernant la sécurité informatique ?",
+  answers:{A:"Non, c'est géré uniquement par notre prestataire IT ou le responsable interne.",B:"Oui, la Direction est informée des grands risques cyber 1 à 2 fois par an.",C:"Oui, le risque cyber est un point d'agenda régulier du Comité de Direction."},
+  constat:{A:"Les décisions de sécurité sont déléguées au prestataire ou au référent : la Direction ne valide pas les risques.",B:"La Direction est informée ponctuellement des risques cyber, sans suivi régulier.",C:"Le risque cyber est inscrit régulièrement à l'ordre du jour du Comité de Direction."}},
+ {id:"Q2", theme:"Inventaire", cat:"Gouvernance", ref:"CIS Control 1",
+  text:"Avez-vous un inventaire précis de tous vos équipements ?",
+  answers:{A:"Non, c'est une connaissance empirique.",B:"Oui, nous avons une liste à jour, même si elle n'est pas centralisée.",C:"Oui, un outil gère cet inventaire automatiquement."},
+  constat:{A:"L'inventaire est empirique : le parc n'est pas recensé de façon fiable.",B:"Un inventaire existe mais il est dispersé et mis à jour manuellement.",C:"L'inventaire est centralisé et tenu à jour automatiquement."}},
+ {id:"Q3", theme:"Wi-Fi visiteurs", cat:"Sécurité fondamentale", ref:"CIS Control 12 · ANSSI",
+  text:"Le Wi-Fi de vos visiteurs est-il complètement séparé de votre réseau interne ?",
+  answers:{A:"Non, les visiteurs utilisent le même Wi-Fi que nos salariés.",B:"Oui, il existe un réseau « invité » mais il n'est pas complètement isolé.",C:"Oui, le réseau « invité » est complètement isolé (segmenté)."},
+  constat:{A:"Les visiteurs partagent le réseau des salariés : un appareil infecté peut atteindre les postes internes.",B:"Un réseau invité existe mais son isolement est incomplet.",C:"Le réseau invité est segmenté du réseau interne."}},
+ {id:"Q4", theme:"Appareils mobiles", cat:"Sécurité fondamentale", ref:"CIS Control 3 · RGPD",
+  text:"Vos appareils mobiles sont-ils protégés en cas de perte ou de vol ?",
+  answers:{A:"Nous n'avons aucune procédure pour effacer les données à distance.",B:"Nous avons un mot de passe, mais les données ne sont pas chiffrées.",C:"Nous pouvons effacer les données à distance (MDM) et elles sont chiffrées."},
+  constat:{A:"Aucun moyen d'effacer à distance les données d'un appareil perdu.",B:"Les appareils sont protégés par mot de passe, mais leurs données ne sont pas chiffrées.",C:"Les appareils sont chiffrés et gérés à distance (MDM)."}},
+ {id:"Q5", theme:"Reprise d'activité", cat:"Continuité", ref:"ISO 27001 (continuité)",
+  text:"Quel serait le délai maximum acceptable pour reprendre votre activité après une panne majeure ?",
+  answers:{A:"Je ne sais pas, nous n'y avons jamais pensé.",B:"Quelques jours (48h à 5 jours) en limitant beaucoup l'activité.",C:"Quelques heures (moins de 24h), avec un plan pour maintenir une activité minimale."},
+  constat:{A:"Le délai de reprise acceptable n'a jamais été défini.",B:"La reprise prendrait plusieurs jours avec une activité très dégradée.",C:"Un objectif de reprise en moins de 24h est défini, avec un mode dégradé prévu."}},
+ {id:"Q6", theme:"Double authentification", cat:"Accès et humain", ref:"CIS Control 6 · ANSSI",
+  text:"Utilisez-vous la « double sécurité » (MFA/2FA) pour vos accès importants ?",
+  answers:{A:"Non, nous n'utilisons que le mot de passe.",B:"Oui, pour la banque, mais pas pour la messagerie.",C:"Oui, la MFA/2FA est obligatoire pour tous les accès critiques (messagerie, VPN, Cloud)."},
+  constat:{A:"Les accès reposent sur le seul mot de passe.",B:"La double authentification ne couvre pas la messagerie.",C:"La double authentification est obligatoire sur tous les accès critiques."}},
+ {id:"Q7", theme:"Sensibilisation", cat:"Accès et humain", ref:"ISO 27001 (ressources humaines)",
+  text:"Vos salariés reçoivent-ils une sensibilisation aux risques cyber (phishing) ?",
+  answers:{A:"Non, nous comptons sur le bon sens de chacun.",B:"Oui, une note interne est envoyée de temps en temps.",C:"Oui, une formation ou sensibilisation est faite au moins une fois par an."},
+  constat:{A:"Aucune sensibilisation des équipes au phishing.",B:"La sensibilisation se limite à des notes internes ponctuelles.",C:"Une sensibilisation est organisée au moins une fois par an."}},
+ {id:"Q8", theme:"Équipements personnels", cat:"Accès et humain", ref:"ANSSI (BYOD)",
+  text:"Les employés ont-ils le droit d'utiliser leurs équipements personnels (BYOD) ?",
+  answers:{A:"Oui, sans restriction et sans vérification de sécurité.",B:"Oui, mais une charte a été mise en place.",C:"Non, ou seulement si le matériel est contrôlé et sécurisé par l'IT (BYOD maîtrisé)."},
+  constat:{A:"Les équipements personnels sont utilisés sans aucun contrôle.",B:"L'usage des équipements personnels est encadré par une charte, sans contrôle technique.",C:"Les équipements personnels sont interdits ou contrôlés par l'IT."}},
+ {id:"Q9", theme:"Contrats", cat:"Conformité et crise", ref:"RGPD (sous-traitance)",
+  text:"Vos contrats (conventions partenariales, contrats des prestataires) prévoient-ils les responsabilités en cas de problème de sécurité ?",
+  answers:{A:"Non, ce n'est pas clair ou pas mentionné.",B:"Oui, c'est mentionné, mais sans détails précis.",C:"Oui, les responsabilités sont clairement définies et auditées."},
+  constat:{A:"Les contrats ne précisent pas les responsabilités en cas d'incident.",B:"Les responsabilités sont évoquées dans les contrats, sans détail.",C:"Les responsabilités de sécurité sont définies et suivies dans les contrats."}},
+ {id:"Q10", theme:"Gestion de crise", cat:"Conformité et crise", ref:"ANSSI (gestion de crise)",
+  text:"Avez-vous un plan simple en cas de crise majeure (incendie, cyberattaque) ?",
+  answers:{A:"Non, nous improviserons le jour J.",B:"Oui, nous avons une liste de contacts et une idée de ce qu'il faut faire.",C:"Oui, un Plan de Gestion de Crise (PGC) est formalisé et connu de la direction."},
+  constat:{A:"Aucun plan de crise : la réponse serait improvisée.",B:"Une liste de contacts existe, sans plan formalisé.",C:"Un plan de gestion de crise est formalisé et connu de la Direction."}}
+];
+const LEVELS = {
+ A:{name:"Niveau A · Réactif", risk:"Risque élevé", text:"L'informatique est une « boîte noire ». La Direction subit les aléas techniques. Risque fort de blocage de l'activité en cas d'incident."},
+ B:{name:"Niveau B · Défini", risk:"À améliorer", text:"Les enjeux sont connus et des mesures existent, mais elles restent partielles ou peu suivies."},
+ C:{name:"Niveau C · Optimisé", risk:"Maîtrise", text:"La Direction pilote son système d'information et la sécurité fait partie des décisions."}
+};
+const RECOS = [
+ {when:a=>a.Q6!=="C", title:"Rendre la double authentification obligatoire", why:"Messagerie, VPN et cloud en priorité : c'est la protection la plus efficace contre le vol de mots de passe."},
+ {when:a=>a.Q1!=="C", title:"Instaurer un Comité de Pilotage SI", why:"1h30, deux à quatre fois par an, Direction + référent ou prestataire, pour valider les risques et les investissements."},
+ {when:a=>a.Q10!=="C"||a.Q5==="A", title:"Formaliser un plan de crise et un objectif de reprise", why:"Qui appeler, que faire dans la première heure, quel délai de reprise viser."},
+ {when:a=>a.Q7!=="C", title:"Sensibiliser les équipes au phishing chaque année", why:"Un atelier court suffit pour réduire fortement les clics sur les faux messages."},
+ {when:a=>a.Q2!=="C", title:"Tenir un inventaire du parc à jour", why:"On ne protège pas ce qu'on ne connaît pas (CIS Control 1)."}
+];
+const PTS = {A:1,B:2,C:3};
+
+/* ===== Algorithme de scoring (règles transparentes, aucune IA) =====
+   A = 1, B = 2, C = 3 · total sur 30 · 10-16 : A · 17-23 : B · 24-30 : C */
+function score(ans){
+  const total = QUESTIONS.reduce((s,q)=>s+PTS[ans[q.id]],0);
+  const lvl = total <= 16 ? "A" : total <= 23 ? "B" : "C";
+  return {total, lvl};
+}
+
+/* ===== État ===== */
+const state = {view:"home", i:0, ans:{}, counts:{}};
+QUESTIONS.forEach(q=>state.counts[q.id]={A:0,B:0,C:0});
+try{ const c = JSON.parse(localStorage.getItem("ag-counts")||"null"); if(c) Object.assign(state.counts,c);}catch(e){}
+function saveCounts(){ try{localStorage.setItem("ag-counts",JSON.stringify(state.counts));}catch(e){} }
+
+const app = document.getElementById("app");
+const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const topBar = (right) => `<div class="top"><span class="brand">DSI ML · Autodiagnostic cybersécurité</span>${right||""}</div>`;
+
+function render(){
+  if (state.view==="home") return renderHome();
+  if (state.view==="q") return renderQ();
+  if (state.view==="result") return renderResult();
+  if (state.view==="anim") return renderAnim();
+}
+
+function renderHome(){
+  app.innerHTML = `<div class="screen" style="display:flex;flex-direction:column;gap:20px">
+  ${topBar(`<button class="linkbtn" id="toAnim">Mode animateur</button>`)}
+  <h1>Où en est la cybersécurité de votre Mission Locale ?</h1>
+  <p class="lead">10 questions issues de l'audit de sécurité. Votre score et votre niveau s'affichent à la fin, calculés par des règles fixes, sans IA.</p>
+  <div class="facts">
+    <div class="fact"><b>10</b><span>questions</span></div>
+    <div class="fact"><b>3 min</b><span>pour répondre</span></div>
+    <div class="fact"><b>0</b><span>donnée envoyée : tout reste sur votre téléphone</span></div>
+  </div>
+  <div><button class="btn" id="start">Commencer</button></div>
+  </div>`;
+  document.getElementById("start").onclick=()=>{state.view="q";state.i=0;state.ans={};render();};
+  document.getElementById("toAnim").onclick=()=>{state.view="anim";render();};
+}
+
+function renderQ(){
+  const q = QUESTIONS[state.i], cur = state.ans[q.id];
+  app.innerHTML = `<div class="screen" style="display:flex;flex-direction:column;gap:20px">
+  ${topBar()}
+  <div class="progress" aria-hidden="true">${QUESTIONS.map((_,k)=>`<i class="${k<=state.i?"on":""}"></i>`).join("")}</div>
+  <div class="card">
+    <span class="qmeta">${q.id} · ${esc(q.theme)} · ${state.i+1}/${QUESTIONS.length}</span>
+    <h2 id="qt">${esc(q.text)}</h2>
+    <div class="opts" role="radiogroup" aria-labelledby="qt">
+      ${["A","B","C"].map(k=>`<label class="opt ${cur===k?"sel":""}" for="o${k}">
+        <input type="radio" name="o" id="o${k}" value="${k}" ${cur===k?"checked":""}>
+        <span class="k">${k}</span><span>${esc(q.answers[k])}</span></label>`).join("")}
+    </div>
+  </div>
+  <div class="row">
+    <button class="btn ghost" id="prev" ${state.i===0?"disabled":""}>Précédent</button>
+    <button class="btn" id="next" ${cur?"":"disabled"}>${state.i===QUESTIONS.length-1?"Voir mon résultat":"Suivant"}</button>
+  </div></div>`;
+  app.querySelectorAll('input[name="o"]').forEach(r=>r.onchange=e=>{
+    state.ans[q.id]=e.target.value;
+    app.querySelectorAll(".opt").forEach(o=>o.classList.toggle("sel",o.querySelector("input").checked));
+    document.getElementById("next").disabled=false;
+  });
+  document.getElementById("prev").onclick=()=>{state.i--;render();};
+  document.getElementById("next").onclick=()=>{
+    if(state.i<QUESTIONS.length-1){state.i++;render();}else{state.view="result";render();}
+  };
+}
+
+function renderResult(){
+  const a = state.ans, s = score(a), L = LEVELS[s.lvl];
+  const recos = RECOS.filter(r=>r.when(a));
+  const bySection = {};
+  QUESTIONS.forEach(q=>{(bySection[q.cat] ||= []).push(q);});
+  const counts = {A:0,B:0,C:0}; QUESTIONS.forEach(q=>counts[a[q.id]]++);
+  app.innerHTML = `<div class="screen" style="display:flex;flex-direction:column;gap:20px">
+  ${topBar()}
+  <div class="verdict ${s.lvl}">
+    <span class="pill ${s.lvl}">${esc(L.risk)}</span>
+    <h2>${esc(L.name)}</h2>
+    <p>${esc(L.text)}</p>
+    <h2 style="font-size:clamp(34px,8vw,48px)">${s.total} / 30</h2>
+    <div class="calc">${counts.A} A × 1 + ${counts.B} B × 2 + ${counts.C} C × 3 = ${s.total} points · 10 à 16 : A · 17 à 23 : B · 24 à 30 : C</div>
+  </div>
+  <div class="report">
+    <div class="doc-h">Extrait généré automatiquement · Rapport d'audit</div>
+    ${Object.keys(bySection).map(sec=>`<section>
+      <h3>${esc(sec)}</h3>
+      ${bySection[sec].map(q=>`<p><b>${esc(q.theme)} :</b> ${esc(q.constat[a[q.id]])} <span class="ref">(${esc(q.ref)})</span></p>`).join("")}
+    </section>`).join("")}
+    <section>
+      <h3>Recommandations prioritaires</h3>
+      ${recos.length?`<ol>${recos.slice(0,3).map(r=>`<li><b>${esc(r.title)}</b><br><span class="note">${esc(r.why)}</span></li>`).join("")}</ol>`:`<p>Aucune action prioritaire : maintenir le pilotage actuel et le revoir chaque année.</p>`}
+    </section>
+    <p class="note">Dans l'audit réel, ce texte est relu et validé par un auditeur DSI ML avant la restitution.</p>
+  </div>
+  <div class="card">
+    <h3>Vos réponses</h3>
+    <table class="mini"><tbody>${QUESTIONS.map(q=>`<tr><td>${q.id} · ${esc(q.theme)}</td><td><span class="pill ${a[q.id]}">${a[q.id]}</span></td></tr>`).join("")}</tbody></table>
+  </div>
+  <div class="row"><button class="btn ghost" id="again">Recommencer</button></div>
+  </div>`;
+  document.getElementById("again").onclick=()=>{state.view="home";render();};
+}
+
+function renderAnim(){
+  let tot={A:0,B:0,C:0}, n=0;
+  QUESTIONS.forEach(q=>["A","B","C"].forEach(k=>tot[k]+=+state.counts[q.id][k]||0));
+  const all = tot.A+tot.B+tot.C;
+  const roomAvg = all ? (tot.A*1+tot.B*2+tot.C*3)/all : 0;
+  const roomLvl = !all ? null : roomAvg<1.67?"A":roomAvg<2.34?"B":"C";
+  const bar = c=>{const t=(+c.A)+(+c.B)+(+c.C)||1;return `<div class="bar" role="img" aria-label="A ${c.A}, B ${c.B}, C ${c.C}">
+     ${["A","B","C"].map(k=>{const p=Math.round(100*(+c[k])/t);return p?`<span class="${k.toLowerCase()}" style="width:${p}%">${p>=10?k+" "+p+"%":""}</span>`:"";}).join("")}</div>`;};
+  app.innerHTML = `<div class="screen" style="display:flex;flex-direction:column;gap:20px">
+  ${topBar(`<button class="linkbtn" id="back">Retour au questionnaire</button>`)}
+  <h1>Résultats de la salle</h1>
+  <p class="lead">Saisissez le nombre de réponses A, B et C par question (à main levée). Le même algorithme calcule le niveau moyen de la salle.</p>
+  <div class="verdict ${roomLvl||"B"}" ${roomLvl?"":'style="background:var(--surface);border-color:var(--line)"'}>
+    ${roomLvl?`<span class="pill ${roomLvl}">${esc(LEVELS[roomLvl].risk)}</span><h2>Salle : ${esc(LEVELS[roomLvl].name)}</h2>
+    <div class="calc">Score moyen de la salle : ${(roomAvg*10).toFixed(1)} / 30</div>`:`<h2>En attente des réponses</h2><p class="note">Les barres se remplissent au fur et à mesure de la saisie.</p>`}
+    <div class="legend"><span><i style="background:var(--lvA)"></i>A · Réactif</span><span><i style="background:var(--lvB)"></i>B · Défini</span><span><i style="background:var(--lvC)"></i>C · Optimisé</span></div>
+  </div>
+  <div class="card">
+    ${QUESTIONS.map(q=>`<div class="qblock">
+      <span class="qmeta">${q.id} · ${esc(q.theme)}</span>
+      <p><b>${esc(q.text)}</b></p>
+      ${bar(state.counts[q.id])}
+      <div class="counts">${["A","B","C"].map(k=>`<label for="c-${q.id}-${k}">${k}<input type="number" min="0" inputmode="numeric" id="c-${q.id}-${k}" data-q="${q.id}" data-k="${k}" value="${state.counts[q.id][k]}"></label>`).join("")}</div>
+    </div>`).join("")}
+  </div>
+  <div class="row"><button class="btn ghost" id="reset">Remettre à zéro</button></div>
+  </div>`;
+  app.querySelectorAll(".counts input").forEach(inp=>inp.onchange=e=>{
+    const v=Math.max(0,parseInt(e.target.value,10)||0);
+    state.counts[e.target.dataset.q][e.target.dataset.k]=v; saveCounts(); render();
+    const again=document.getElementById(e.target.id); if(again) again.focus();
+  });
+  document.getElementById("back").onclick=()=>{state.view="home";render();};
+  document.getElementById("reset").onclick=()=>{QUESTIONS.forEach(q=>state.counts[q.id]={A:0,B:0,C:0});saveCounts();render();};
+}
+
+if (location.hash==="#animateur") state.view="anim";
+render();
+</script>
+
+</body>
+</html>
